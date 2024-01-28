@@ -18,11 +18,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/libros_pedidos", librosPedidos);
 
+const mongoDbUrl = process.env.MONGODB_URI;
+
 const connectDB = async () => {
   try {
-    await mongoose.connect(
-      "mongodb+srv://aaandrangom:OV5BoAdLwbOQkqL5@cluster0.ndhfkej.mongodb.net/?retryWrites=true&w=majority"
-    );
+    await mongoose.connect(mongoDbUrl);
     console.log("MongoDB Connected...");
   } catch (err) {
     console.error("Connection to MongoDB failed", err.message);
