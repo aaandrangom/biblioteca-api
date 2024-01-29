@@ -355,7 +355,7 @@ router.put("/cedula", verificarToken, async (req, res) => {
  *                   type: integer
  *                   description: Código de estado HTTP 500.
  */
-router.post("/", verificarToken, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const {
       usr_cedula,
