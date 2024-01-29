@@ -1,6 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./models/doc");
 const app = express();
 
 const librosRoutes = require("./routes/libros");
@@ -17,6 +19,7 @@ app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/libros_pedidos", librosPedidos);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const mongoDbUrl = process.env.MONGODB_URI;
 

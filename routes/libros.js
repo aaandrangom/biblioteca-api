@@ -1,38 +1,30 @@
 const express = require("express");
 const router = express.Router();
+const { Sequelize } = require("sequelize");
 const Libro = require("../models/libro");
+const verificarToken = require("../middleware/authMiddleware");
 
-router.get("/buscar-libro/:titulo", async (req, res) => {
-  try {
-    const titulo = req.params.titulo;
-    const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(
-      titulo
-    )}`;
-
-    const response = await axios.get(url);
-    const libros = response.data.docs;
-
-    if (libros.length === 0) {
-      return res.status(404).json({ message: "Libro no encontrado" });
-    }
-
-    const primerLibro = libros[0];
-    const seed = primerLibro.seed[0];
-    const olid = seed.match(/\/books\/(OL\d+M)/)[1];
-
-    const urlPortada = `http://covers.openlibrary.org/b/olid/${olid}-L.jpg`;
-
-    res.json({ urlPortada: urlPortada });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error al buscar el libro", error: error.message });
-  }
-});
-
-// Obtiene todos los libros alfabeticamente
-router.get("/", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros:
+ *   get:
+ *     summary: Obtener todos los libros alfabéticamente.
+ *     description: Obtiene una lista de todos los libros ordenados alfabéticamente por título.
+ *     tags:
+ *       - Libros
+ *     responses:
+ *       200:
+ *         description: Lista de libros recuperada con éxito.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: './models/libro'
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.get("/", verificarToken, async (req, res) => {
   try {
     const libros = await Libro.findAll({
       order: [["li_titulo", "ASC"]],
@@ -44,16 +36,55 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Crea un libro
-router.post("/", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros:
+ *   post:
+ *     summary: Crear un nuevo libro.
+ *     description: Crea un nuevo libro con la información proporcionada.
+ *     tags:
+ *       - Libros
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               li_titulo:
+ *                 type: string
+ *                 description: Título del libro.
+ *               li_autor:
+ *                 type: string
+ *                 description: Autor del libro.
+ *               li_anio_publicacion:
+ *                 type: integer
+ *                 description: Año de publicación del libro.
+ *               li_stock:
+ *                 type: integer
+ *                 description: Cantidad en stock del libro.
+ *               li_estado:
+ *                 type: string
+ *                 description: Estado del libro.
+ *     responses:
+ *       201:
+ *         description: Libro creado con éxito.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: './models/libro'
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.post("/", verificarToken, async (req, res) => {
   try {
-    const { li_titulo, li_autor, li_año_publicacion, li_stock, li_estado } =
+    const { li_titulo, li_autor, li_anio_publicacion, li_stock, li_estado } =
       req.body;
 
     let libro = await Libro.create({
       li_titulo,
       li_autor,
-      li_año_publicacion,
+      li_anio_publicacion,
       li_stock,
       li_estado,
     });
@@ -64,17 +95,65 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Actualiza la informacion de un libro por su id
-router.put("/:id", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros/{id}:
+ *   put:
+ *     summary: Actualizar un libro existente.
+ *     description: Actualiza los detalles de un libro existente con la información proporcionada.
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID del libro a actualizar.
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               li_titulo:
+ *                 type: string
+ *                 description: Título del libro.
+ *               li_autor:
+ *                 type: string
+ *                 description: Autor del libro.
+ *               li_anio_publicacion:
+ *                 type: integer
+ *                 description: Año de publicación del libro.
+ *               li_stock:
+ *                 type: integer
+ *                 description: Cantidad en stock del libro.
+ *               li_estado:
+ *                 type: string
+ *                 description: Estado del libro.
+ *     responses:
+ *       200:
+ *         description: Libro actualizado con éxito.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: './models/libro'
+ *       404:
+ *         description: Libro no encontrado.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.put("/:id", verificarToken, async (req, res) => {
   try {
-    const { li_titulo, li_autor, li_año_publicacion, li_stock, li_estado } =
+    const { li_titulo, li_autor, li_anio_publicacion, li_stock, li_estado } =
       req.body;
 
     let resultado = await Libro.update(
       {
         li_titulo,
         li_autor,
-        li_año_publicacion,
+        li_anio_publicacion,
         li_stock,
         li_estado,
       },
@@ -95,8 +174,30 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Cambia el estado de un libro a 'D' por su id
-router.delete("/:id", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros/{id}:
+ *   delete:
+ *     summary: Deshabilitar un libro existente.
+ *     description: Deshabilita un libro existente cambiando su estado a 'D' (Deshabilitado).
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID del libro a deshabilitar.
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Libro deshabilitado con éxito.
+ *       404:
+ *         description: Libro no encontrado.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.delete("/:id", verificarToken, async (req, res) => {
   try {
     const resultado = await Libro.update(
       { estado: "D" }, // Establece el estado a 'D'
@@ -114,8 +215,36 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Busca un libro por su titulo
-router.get("/titulo", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros/titulo:
+ *   get:
+ *     summary: Buscar libros por título.
+ *     description: Busca libros por título, utilizando una coincidencia parcial (insensible a mayúsculas y minúsculas).
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: query
+ *         name: titulo
+ *         required: true
+ *         description: Título o parte del título del libro a buscar.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de libros que coinciden con el título proporcionado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: './models/libro'
+ *       400:
+ *         description: Por favor, proporciona un título para buscar.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.get("/titulo", verificarToken, async (req, res) => {
   try {
     const { titulo } = req.query;
 
@@ -140,8 +269,36 @@ router.get("/titulo", async (req, res) => {
   }
 });
 
-// Busca un o varios libros por su autor.
-router.get("/autor", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros/autor:
+ *   get:
+ *     summary: Buscar libros por autor.
+ *     description: Busca libros por autor, utilizando una coincidencia parcial (insensible a mayúsculas y minúsculas).
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: query
+ *         name: autor
+ *         required: true
+ *         description: Nombre del autor o parte del nombre del autor de los libros a buscar.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de libros que coinciden con el autor proporcionado, ordenados alfabéticamente por autor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: './models/libro'
+ *       400:
+ *         description: Por favor, proporciona un autor para buscar.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.get("/autor", verificarToken, async (req, res) => {
   try {
     const { autor } = req.query;
 
@@ -167,7 +324,36 @@ router.get("/autor", async (req, res) => {
   }
 });
 
-router.get("/publicacion", async (req, res) => {
+/**
+ * @swagger
+ * /api/libros/publicacion:
+ *   get:
+ *     summary: Buscar libros por año de publicación.
+ *     description: Busca libros por año de publicación exacto.
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: query
+ *         name: anio
+ *         required: true
+ *         description: Año de publicación de los libros a buscar.
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de libros publicados en el año proporcionado, ordenados alfabéticamente por título.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                $ref: './models/libro'
+ *       400:
+ *         description: Por favor, proporciona un año de publicación para buscar.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+router.get("/publicacion", verificarToken, async (req, res) => {
   try {
     const { anio } = req.query;
 
@@ -179,7 +365,7 @@ router.get("/publicacion", async (req, res) => {
 
     const libros = await Libro.findAll({
       where: {
-        li_año_publicacion: anio,
+        li_anio_publicacion: anio,
       },
       order: [["li_titulo", "ASC"]],
     });
