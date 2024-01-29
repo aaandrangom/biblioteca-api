@@ -695,9 +695,26 @@ router.post("/verificar", async (req, res) => {
 
   usuario.usr_verificado = true;
   usuario.usr_codigo_verificacion = null;
+
   await usuario.save();
 
-  res.status(200).json({ message: "Cuenta verificada con éxito." });
+  const usuarioRespuesta = {
+    usr_cedula: usuario.usr_cedula,
+    usr_primer_nombre: usuario.usr_primer_nombre,
+    usr_segundo_nombre: usuario.usr_segundo_nombre,
+    usr_primer_apellido: usuario.usr_primer_apellido,
+    usr_segundo_apellido: usuario.usr_segundo_apellido,
+    usr_email: usuario.usr_email,
+    usr_fecha_nacimiento: usuario.usr_fecha_nacimiento,
+    usr_rol: usuario.usr_rol,
+    usr_estado: usuario.usr_estado,
+    usr_verificado: usuario.usr_verificado,
+  };
+
+  res.status(200).json({
+    message: "Cuenta verificada con éxito.",
+    usuario: usuarioRespuesta,
+  });
 });
 
 module.exports = router;
