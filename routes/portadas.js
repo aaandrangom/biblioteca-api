@@ -63,7 +63,8 @@ const router = express.Router();
  *                   description: Descripción del error.
  */
 router.post("/guardar-portada", verificarToken, async (req, res) => {
-  const titulo = req.body.titulo; // El título se recibe del cuerpo de la solicitud
+  const { titulo } = req.body; // Asegúrate de que "titulo" se envía en el cuerpo de la solicitud
+
   const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(
     titulo
   )}`;
@@ -81,7 +82,11 @@ router.post("/guardar-portada", verificarToken, async (req, res) => {
     const olid = seed.match(/\/books\/(OL\d+M)/)[1];
     const urlPortada = `http://covers.openlibrary.org/b/olid/${olid}-L.jpg`;
 
-    const nuevaPortada = new Portada({ urlPortada });
+    const nuevaPortada = new Portada({
+      titulo,
+      portadaUrl: urlPortada,
+    });
+
     const portadaGuardada = await nuevaPortada.save();
 
     res.json({
@@ -93,6 +98,36 @@ router.post("/guardar-portada", verificarToken, async (req, res) => {
     res
       .status(500)
       .json({ message: "Error al guardar la portada", error: error.message });
+  }
+});
+
+router.get("/obtener-portada", async (req, res) => {
+  const { titulo } = req.query; // Usamos req.query para obtener el título de los parámetros de la URL
+
+  if (!titulo) {
+    return res
+      .status(400)
+      .json({ message: "Por favor proporciona el título del libro." });
+  }
+
+  try {
+    const portada = await Portada.findOne({ titulo: new RegExp(titulo, "i") });
+
+    if (!portada) {
+      return res.status(404).json({
+        message: "Portada no encontrada para el título proporcionado.",
+      });
+    }
+
+    res.json({
+      message: "Portada encontrada con éxito",
+      portada: portada,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error al buscar la portada", error: error.message });
   }
 });
 
