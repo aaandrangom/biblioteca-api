@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./models/doc");
+const cors = require("cors");
 const app = express();
 
 const librosRoutes = require("./routes/libros");
@@ -12,6 +13,7 @@ const pedidoRoutes = require("./routes/pedidos");
 const librosPedidos = require("./routes/libros_pedidos");
 const portadasRoutes = require("./routes/portadas");
 
+app.use(cors());
 app.use(express.json());
 
 app.use("/api/libros", librosRoutes);
