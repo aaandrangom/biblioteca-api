@@ -377,4 +377,20 @@ router.get("/publicacion", verificarToken, async (req, res) => {
   }
 });
 
+router.get("/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const libro = await Libro.findByPk(id);
+
+    if (!libro) {
+      return res.status(404).json({ message: "Libro no encontrado" });
+    }
+
+    res.json(libro);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al buscar el libro", error: error });
+  }
+});
+
 module.exports = router;
