@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const Pedido = require("../models/pedido");
+const Libro = require("../models/libro");
+const InventarioLibro = require("../models/inventario_libro");
+const LibroPedido = require("../models/libro_pedido");
 const verificarToken = require("../middleware/authMiddleware");
 
 /**
@@ -384,21 +387,46 @@ router.post("/finalizado", verificarToken, async (req, res) => {
  */
 router.post("/", verificarToken, async (req, res) => {
   try {
-    const {
-      ped_usuario,
-      ped_fecha_solicitud,
-      ped_fecha_devolucion,
-      ped_estado,
-    } = req.body;
+    const { ped_usuario, ped_fecha_devolucion, ped_estado, lip_libro } =
+      req.body;
 
+    // Buscar una copia disponible en la tabla inventario_libro
+    const copiaDisponible = await InventarioLibro.findOne({
+      where: {
+        invl_libro: lip_libro,
+        invl_estado: "DI",
+      },
+    });
+
+    if (!copiaDisponible) {
+      return res
+        .status(404)
+        .json({ message: "No hay copias disponibles de este libro" });
+    }
+
+    // Crear el registro en la tabla Pedido
     const nuevoPedido = await Pedido.create({
       ped_usuario,
-      ped_fecha_solicitud,
       ped_fecha_devolucion,
       ped_estado,
     });
 
-    res.status(201).json(nuevoPedido);
+    // Crear el registro en la tabla libro_pedido y asignar lip_codigo_unico_libro
+    const libroPedido = await LibroPedido.create({
+      lip_pedido: nuevoPedido.ped_secuencial,
+      lip_libro,
+      lip_codigo_unico_libro: copiaDisponible.invl_secuencial,
+      lip_fecha_entrega_cliente: null,
+      lip_fecha_devolucion: ped_fecha_devolucion,
+      lip_estado: "ES",
+    });
+
+    await InventarioLibro.update(
+      { invl_estado: "S" },
+      { where: { invl_secuencial: libroPedido.lip_codigo_unico_libro } }
+    );
+
+    res.status(201).json({ nuevoPedido, libroPedido });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: err.message });
@@ -466,22 +494,74 @@ router.put("/:id", verificarToken, async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      ped_usuario,
-      ped_fecha_solicitud,
       ped_fecha_devolucion,
       ped_estado,
+      lip_libro,
+      lip_codigo_unico_libro,
     } = req.body;
 
-    const resultado = await Pedido.update(
-      { ped_usuario, ped_fecha_solicitud, ped_fecha_devolucion, ped_estado },
+    const pedidoActualizado = await Pedido.findOne({
+      where: { ped_secuencial: id },
+    });
+
+    if (!pedidoActualizado) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    // Verificar si el estado actual es diferente del nuevo estado
+    if (pedidoActualizado.ped_estado !== ped_estado) {
+      // Si el nuevo estado es 'R' (Recibido)
+      if (ped_estado === "R") {
+        await Libro.decrement("li_stock", {
+          by: 1,
+          where: { li_secuencial: lip_libro },
+        });
+        await InventarioLibro.update(
+          { invl_estado: "CP" },
+          { where: { invl_secuencial: lip_codigo_unico_libro } }
+        );
+        await LibroPedido.update(
+          { lip_estado: "EC" },
+          { where: { lip_pedido: id } }
+        );
+      }
+
+      // Si el nuevo estado es 'F' (Finalizado)
+      if (ped_estado === "F") {
+        await Libro.increment("li_stock", {
+          by: 1,
+          where: { li_secuencial: lip_libro },
+        });
+        await InventarioLibro.update(
+          { invl_estado: "DI" },
+          { where: { invl_libro: lip_libro } }
+        );
+        await LibroPedido.update(
+          { lip_estado: "DE" },
+          { where: { lip_pedido: id } }
+        );
+      }
+
+      // Si el nuevo estado es 'A' (Aceptado)
+      if (ped_estado === "A") {
+        // Calcular la fecha de entrega (un día después de ser aceptado)
+        const fechaEntrega = new Date();
+        fechaEntrega.setDate(fechaEntrega.getDate() + 1);
+
+        // Actualizar la fecha de entrega al cliente en la tabla libro_pedido
+        await LibroPedido.update(
+          { lip_fecha_entrega_cliente: fechaEntrega },
+          { where: { lip_pedido: id } }
+        );
+      }
+    }
+
+    await Pedido.update(
+      { ped_fecha_devolucion, ped_estado },
       { where: { ped_secuencial: id } }
     );
 
-    if (resultado[0] > 0) {
-      res.json({ message: "Pedido actualizado correctamente" });
-    } else {
-      res.status(404).json({ message: "Pedido no encontrado" });
-    }
+    res.json({ message: "Pedido actualizado correctamente" });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: err.message });

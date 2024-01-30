@@ -12,6 +12,7 @@ const authRoutes = require("./routes/auth");
 const pedidoRoutes = require("./routes/pedidos");
 const librosPedidos = require("./routes/libros_pedidos");
 const portadasRoutes = require("./routes/portadas");
+const dashboardRoutes = require("./routes/dashboard");
 
 app.use(cors());
 app.use(express.json());
@@ -21,6 +22,7 @@ app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/libros_pedidos", librosPedidos);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const mongoDbUrl = process.env.MONGODB_URI;
