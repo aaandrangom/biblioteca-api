@@ -38,15 +38,21 @@ router.post("/login", async (req, res) => {
     const usuario = await Usuario.findOne({ where: { usr_nickname } });
 
     if (!usuario) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res
+        .status(404)
+        .json({ codigo: 2, message: "Usuario no encontrado" });
     }
 
     if (!bcrypt.compareSync(usr_contrasenia, usuario.usr_contrasenia)) {
-      return res.status(401).json({ message: "Contraseña incorrecta" });
+      return res
+        .status(401)
+        .json({ codigo: 3, message: "Contraseña incorrecta" });
     }
 
     if (!usuario.usr_verificado) {
-      return res.status(401).json({ message: "La cuenta no está verificada" });
+      return res
+        .status(401)
+        .json({ codigo: 4, message: "La cuenta no está verificada" });
     }
 
     const token = jwt.sign(
@@ -62,15 +68,18 @@ router.post("/login", async (req, res) => {
     };
 
     res.json({
+      codigo: 1,
       message: "Autenticación exitosa",
       token: token,
       usuario: usuarioRespuesta,
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error en el servidor", error: error.message });
+    res.status(500).json({
+      codigo: 5,
+      message: "Error en el servidor",
+      error: error.message,
+    });
   }
 });
 
