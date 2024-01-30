@@ -34,26 +34,44 @@ const bcrypt = require("bcryptjs");
 router.post("/login", async (req, res) => {
   const { usr_nickname, usr_contrasenia } = req.body;
 
-  const usuario = await Usuario.findOne({ where: { usr_nickname } });
+  try {
+    const usuario = await Usuario.findOne({ where: { usr_nickname } });
 
-  if (
-    !usuario ||
-    !bcrypt.compareSync(usr_contrasenia, usuario.usr_contrasenia)
-  ) {
-    return res.status(401).json({ message: "Autenticación fallida" });
+    if (!usuario) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (!bcrypt.compareSync(usr_contrasenia, usuario.usr_contrasenia)) {
+      return res.status(401).json({ message: "Contraseña incorrecta" });
+    }
+
+    if (!usuario.usr_verificado) {
+      return res.status(401).json({ message: "La cuenta no está verificada" });
+    }
+
+    const token = jwt.sign(
+      { usr_cedula: usuario.usr_cedula, usr_rol: usuario.usr_rol },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const usuarioRespuesta = {
+      usr_cedula: usuario.usr_cedula,
+      usr_nickname: usuario.usr_nickname,
+      usr_email: usuario.usr_email,
+    };
+
+    res.json({
+      message: "Autenticación exitosa",
+      token: token,
+      usuario: usuarioRespuesta,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error en el servidor", error: error.message });
   }
-
-  if (!usuario.usr_verificado) {
-    return res.status(401).json({ message: "La cuenta no está verificada" });
-  }
-
-  const token = jwt.sign(
-    { usr_cedula: usuario.usr_cedula, usr_rol: usuario.usr_rol },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  );
-
-  res.json({ token });
 });
 
 module.exports = router;
