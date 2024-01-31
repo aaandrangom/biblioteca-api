@@ -572,7 +572,7 @@ router.delete("/cancelar-pedido/:id", async (req, res) => {
   try {
     const idPedido = req.params.id;
     const resultado = await Pedido.update(
-      { ped_estado: "PC" }, // Cambia el estado a "PC"
+      { ped_estado: "PC" },
       { where: { ped_secuencial: idPedido } }
     );
 
