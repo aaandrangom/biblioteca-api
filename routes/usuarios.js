@@ -708,4 +708,31 @@ router.post("/verificar", async (req, res) => {
   });
 });
 
+router.get("/filtrar", async (req, res) => {
+  const { rol } = req.query;
+
+  if (!rol) {
+    return res.status(400).json({ message: "Por favor, proporciona un rol." });
+  }
+
+  try {
+    const usuarios = await Usuario.findAll({
+      where: { usr_rol: rol },
+    });
+
+    if (usuarios.length === 0) {
+      return res.status(404).json({
+        message: "No se encontraron usuarios con el rol proporcionado.",
+      });
+    }
+
+    res.json({ message: "Usuarios encontrados con éxito", usuarios });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error en el servidor", error: error.message });
+  }
+});
+
 module.exports = router;
