@@ -50,9 +50,20 @@ router.post("/login", async (req, res) => {
     }
 
     if (!usuario.usr_verificado) {
+      const usuarioRespuesta = {
+        usr_cedula: usuario.usr_cedula,
+        usr_nickname: usuario.usr_nickname,
+        usr_email: usuario.usr_email,
+        usr_nombre_completo: usuario.usr_nombre_completo,
+      };
+
       return res
         .status(401)
-        .json({ codigo: 4, message: "La cuenta no está verificada" });
+        .json({
+          codigo: 4,
+          usuario: usuarioRespuesta,
+          message: "La cuenta no está verificada",
+        });
     }
 
     const token = jwt.sign(
