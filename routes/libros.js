@@ -3,6 +3,8 @@ const router = express.Router();
 const Sequelize = require("sequelize");
 const Libro = require("../models/libro");
 const verificarToken = require("../middleware/authMiddleware");
+const LibroPedido = require("../models/libro_pedido");
+const Pedido = require("../models/pedido");
 
 /**
  * @swagger
@@ -418,6 +420,61 @@ router.get("/filtrar/maspedidos", verificarToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/filtrar/disponibles", async (req, res) => {
+  try {
+    const librosDisponibles = await Libro.findAll({
+      where: {
+        li_stock: {
+          [Sequelize.Op.gt]: 0,
+        },
+      },
+    });
+
+    if (librosDisponibles.length === 0) {
+      return res.status(404).json({ message: "No hay libros disponibles." });
+    }
+
+    res.json(librosDisponibles);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Error al obtener los libros disponibles",
+      error: error.message,
+    });
+  }
+});
+
+router.get("/pedido-libro/:idPedido", async (req, res) => {
+  try {
+    const idPedido = req.params.idPedido;
+
+    const pedido = await Pedido.findByPk(idPedido);
+    if (!pedido) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    const libroPedido = await LibroPedido.findOne({
+      where: { lip_pedido: idPedido },
+    });
+
+    if (!libroPedido) {
+      return res
+        .status(404)
+        .json({ message: "Libro del pedido no encontrado" });
+    }
+
+    const libro = await Libro.findByPk(libroPedido.lip_libro);
+    if (!libro) {
+      return res.status(404).json({ message: "Libro no encontrado" });
+    }
+
+    res.json({ pedido: pedido, libro: libro });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message, status: 500 });
   }
 });
 

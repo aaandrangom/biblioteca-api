@@ -5,6 +5,9 @@ const Libro = require("../models/libro");
 const InventarioLibro = require("../models/inventario_libro");
 const LibroPedido = require("../models/libro_pedido");
 const verificarToken = require("../middleware/authMiddleware");
+const {
+  enviarMensajeLibroAcceptado,
+} = require("../helpers/codigoVerificacionHelpers");
 
 /**
  * @swagger
@@ -495,6 +498,7 @@ router.put("/:id", verificarToken, async (req, res) => {
       ped_estado,
       lip_libro,
       lip_codigo_unico_libro,
+      usr_email,
     } = req.body;
 
     const pedidoActualizado = await Pedido.findOne({
@@ -540,6 +544,8 @@ router.put("/:id", verificarToken, async (req, res) => {
         const fechaEntrega = new Date();
         fechaEntrega.setDate(fechaEntrega.getDate() + 1);
 
+        await enviarMensajeLibroAcceptado(usr_email, id, fechaEntrega);
+
         await LibroPedido.update(
           { lip_fecha_entrega_cliente: fechaEntrega },
           { where: { lip_pedido: id } }
@@ -556,6 +562,43 @@ router.put("/:id", verificarToken, async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/cancelar-pedido/:id", async (req, res) => {
+  try {
+    const idPedido = req.params.id;
+    const resultado = await Pedido.update(
+      { ped_estado: "PC" }, // Cambia el estado a "PC"
+      { where: { ped_secuencial: idPedido } }
+    );
+
+    if (resultado[0] > 0) {
+      res.json({ message: "Pedido actualizado a estado 'PC'" });
+    } else {
+      res
+        .status(404)
+        .json({ message: "Pedido no encontrado o ya estaba en estado 'PC'" });
+    }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message, status: 500 });
+  }
+});
+
+router.get("/:id", async (req, res) => {
+  try {
+    const idPedido = req.params.id;
+    const pedido = await Pedido.findByPk(idPedido);
+
+    if (pedido) {
+      res.json(pedido);
+    } else {
+      res.status(404).json({ message: "Pedido no encontrado" });
+    }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message, status: 500 });
   }
 });
 
