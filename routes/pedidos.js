@@ -608,35 +608,64 @@ router.get("/estado/enviados", async (req, res) => {
       where: { ped_estado: "E" },
     });
 
-    if (pedidos.length === 0) {
+    if (!pedidos.length) {
       return res
         .status(404)
         .json({ message: "No se encontraron pedidos con estado 'E'" });
     }
 
-    res.json(pedidos);
+    const pedidosConLibros = [];
+
+    for (const pedido of pedidos) {
+      const librosPedidos = await LibroPedido.findAll({
+        where: { lip_pedido: pedido.ped_secuencial },
+      });
+
+      for (const libroPedido of librosPedidos) {
+        const libro = await Libro.findByPk(libroPedido.lip_libro);
+        if (libro) {
+          pedidosConLibros.push({ pedido, libroPedido, libro });
+        }
+      }
+    }
+
+    res.json(pedidosConLibros);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ error: err.message, status: 500 });
+    res.status(500).json({ error: err.message });
   }
 });
-
 router.get("/estado/aceptados", async (req, res) => {
   try {
     const pedidos = await Pedido.findAll({
-      where: { ped_estado: "A" },
+      where: { ped_estado: "E" },
     });
 
-    if (pedidos.length === 0) {
+    if (!pedidos.length) {
       return res
         .status(404)
         .json({ message: "No se encontraron pedidos con estado 'E'" });
     }
 
-    res.json(pedidos);
+    const pedidosConLibros = [];
+
+    for (const pedido of pedidos) {
+      const librosPedidos = await LibroPedido.findAll({
+        where: { lip_pedido: pedido.ped_secuencial },
+      });
+
+      for (const libroPedido of librosPedidos) {
+        const libro = await Libro.findByPk(libroPedido.lip_libro);
+        if (libro) {
+          pedidosConLibros.push({ pedido, libroPedido, libro });
+        }
+      }
+    }
+
+    res.json(pedidosConLibros);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ error: err.message, status: 500 });
+    res.status(500).json({ error: err.message });
   }
 });
 
