@@ -602,4 +602,42 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get("/estado/enviados", async (req, res) => {
+  try {
+    const pedidos = await Pedido.findAll({
+      where: { ped_estado: "E" },
+    });
+
+    if (pedidos.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No se encontraron pedidos con estado 'E'" });
+    }
+
+    res.json(pedidos);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message, status: 500 });
+  }
+});
+
+router.get("/estado/aceptados", async (req, res) => {
+  try {
+    const pedidos = await Pedido.findAll({
+      where: { ped_estado: "A" },
+    });
+
+    if (pedidos.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No se encontraron pedidos con estado 'E'" });
+    }
+
+    res.json(pedidos);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message, status: 500 });
+  }
+});
+
 module.exports = router;
