@@ -390,7 +390,6 @@ router.post("/", verificarToken, async (req, res) => {
     const { ped_usuario, ped_fecha_devolucion, ped_estado, lip_libro } =
       req.body;
 
-    // Buscar una copia disponible en la tabla inventario_libro
     const copiaDisponible = await InventarioLibro.findOne({
       where: {
         invl_libro: lip_libro,
@@ -404,14 +403,12 @@ router.post("/", verificarToken, async (req, res) => {
         .json({ message: "No hay copias disponibles de este libro" });
     }
 
-    // Crear el registro en la tabla Pedido
     const nuevoPedido = await Pedido.create({
       ped_usuario,
       ped_fecha_devolucion,
       ped_estado,
     });
 
-    // Crear el registro en la tabla libro_pedido y asignar lip_codigo_unico_libro
     const libroPedido = await LibroPedido.create({
       lip_pedido: nuevoPedido.ped_secuencial,
       lip_libro,
@@ -508,9 +505,7 @@ router.put("/:id", verificarToken, async (req, res) => {
       return res.status(404).json({ message: "Pedido no encontrado" });
     }
 
-    // Verificar si el estado actual es diferente del nuevo estado
     if (pedidoActualizado.ped_estado !== ped_estado) {
-      // Si el nuevo estado es 'R' (Recibido)
       if (ped_estado === "R") {
         await Libro.decrement("li_stock", {
           by: 1,
@@ -526,7 +521,6 @@ router.put("/:id", verificarToken, async (req, res) => {
         );
       }
 
-      // Si el nuevo estado es 'F' (Finalizado)
       if (ped_estado === "F") {
         await Libro.increment("li_stock", {
           by: 1,
@@ -542,13 +536,10 @@ router.put("/:id", verificarToken, async (req, res) => {
         );
       }
 
-      // Si el nuevo estado es 'A' (Aceptado)
       if (ped_estado === "A") {
-        // Calcular la fecha de entrega (un día después de ser aceptado)
         const fechaEntrega = new Date();
         fechaEntrega.setDate(fechaEntrega.getDate() + 1);
 
-        // Actualizar la fecha de entrega al cliente en la tabla libro_pedido
         await LibroPedido.update(
           { lip_fecha_entrega_cliente: fechaEntrega },
           { where: { lip_pedido: id } }

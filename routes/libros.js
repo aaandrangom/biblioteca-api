@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { Sequelize } = require("sequelize");
+const Sequelize = require("sequelize");
 const Libro = require("../models/libro");
 const verificarToken = require("../middleware/authMiddleware");
 
@@ -377,7 +377,7 @@ router.get("/publicacion", verificarToken, async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verificarToken, async (req, res) => {
   try {
     const id = req.params.id;
     const libro = await Libro.findByPk(id);
@@ -390,6 +390,34 @@ router.get("/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error al buscar el libro", error: error });
+  }
+});
+
+router.get("/filtrar/maspedidos", verificarToken, async (req, res) => {
+  try {
+    const librosMasPedidos = await Libro.findAll({
+      attributes: [
+        "li_secuencial",
+        "li_titulo",
+        "li_autor",
+        [
+          Sequelize.literal(
+            `(SELECT COUNT(*) FROM pedidos.libro_pedido WHERE lip_libro = "Libro"."li_secuencial")`
+          ),
+          "cantidad_pedidos",
+        ],
+      ],
+      where: Sequelize.literal(
+        `(SELECT COUNT(*) FROM pedidos.libro_pedido WHERE lip_libro = "Libro"."li_secuencial") > 0`
+      ),
+      order: [[Sequelize.literal('"cantidad_pedidos"'), "DESC"]],
+      limit: 10,
+    });
+
+    res.json(librosMasPedidos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 });
 
