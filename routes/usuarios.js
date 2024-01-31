@@ -111,7 +111,7 @@ router.get("/", verificarToken, async (req, res) => {
  */
 router.get("/cedula", verificarToken, async (req, res) => {
   try {
-    const { cedula } = req.body;
+    const { cedula } = req.query;
 
     if (!cedula) {
       return res
