@@ -65,6 +65,7 @@ router.post("/login", async (req, res) => {
       usr_cedula: usuario.usr_cedula,
       usr_nickname: usuario.usr_nickname,
       usr_email: usuario.usr_email,
+      usr_nombre_completo: usuario.usr_nombre_completo,
     };
 
     res.json({
