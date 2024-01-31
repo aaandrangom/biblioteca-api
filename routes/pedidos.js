@@ -8,6 +8,9 @@ const verificarToken = require("../middleware/authMiddleware");
 const {
   enviarMensajeLibroAcceptado,
 } = require("../helpers/codigoVerificacionHelpers");
+const {
+  enviarMensajeLibroCancelado,
+} = require("../helpers/codigoVerificacionHelpers");
 
 /**
  * @swagger
@@ -575,6 +578,7 @@ router.delete("/cancelar-pedido/:id", async (req, res) => {
 
     if (resultado[0] > 0) {
       res.json({ message: "Pedido actualizado a estado 'PC'" });
+      enviarMensajeLibroCancelado(idPedido, "hpmezam@utn.edu.ec");
     } else {
       res
         .status(404)

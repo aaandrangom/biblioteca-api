@@ -167,4 +167,17 @@ async function enviarMensajeLibroAcceptado(
   }
 }
 
-module.exports = { enviarCodigoVerificacion, enviarMensajeLibroAcceptado };
+async function enviarMensajeLibroCancelado(pedSecuencial, usuarioEmail) {
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to: usuarioEmail,
+    subject: "Pedido cancelado",
+    html: `El pedido con id ${pedSecuencial} ha sido cancelado`,
+  };
+}
+
+module.exports = {
+  enviarCodigoVerificacion,
+  enviarMensajeLibroAcceptado,
+  enviarMensajeLibroCancelado,
+};
